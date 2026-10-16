@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Study Sprint Planner</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">BUS4498 · Option 2</p>
+          <h1>Turn the workload into a next step.</h1>
+          <p class="hero-copy">Choose one assignment to start, fit it into the time you have, and keep the rest in a clear queue.</p>
+        </div>
+        <div id="mode-badge" class="status-badge" aria-live="polite">Checking planner mode…</div>
+      </header>
+      <section class="workspace-grid">
+        <form id="planner-form" class="card input-card">
+          <div class="section-heading">
+            <div><p class="eyebrow">Start here</p><h2>What is on your plate?</h2></div>
+            <button id="example-button" class="button button-secondary" type="button">Load example</button>
+          </div>
+          <label class="field-label" for="available-minutes">Available study time</label>
+          <div class="minutes-input"><input id="available-minutes" type="number" min="1" max="1440" value="45" required /><span>minutes</span></div>
+          <div class="tasks-heading"><div><h3>Assignments</h3><p>Leave unknown details blank; they will appear as N/A.</p></div><button id="add-task-button" class="button button-quiet" type="button">+ Add assignment</button></div>
+          <div id="task-list" class="task-list"></div>
+          <button class="button button-primary button-wide" type="submit">Build my study plan <span aria-hidden="true">→</span></button>
+          <p id="form-error" class="form-error" role="alert"></p>
+        </form>
+        <section id="result-panel" class="card result-card empty-state" aria-live="polite">
+          <div class="empty-icon">✦</div><p class="eyebrow">Your plan</p><h2>A calmer next move is waiting.</h2>
+          <p>Add your assignments and available time, then build a plan. The result will show one recommended task and the queue behind it.</p>
+        </section>
+      </section>
+    </main>
+    <template id="task-row-template">
+      <div class="task-row">
+        <div class="task-row-top"><label>Assignment name<input class="task-name" type="text" placeholder="e.g. Research outline" required /></label><button class="remove-task" type="button" aria-label="Remove assignment">×</button></div>
+        <div class="task-fields">
+          <label>Due date<input class="task-due" type="date" /></label>
+          <label>Effort<input class="task-effort" type="text" placeholder="e.g. 45 min" /></label>
+          <label>Importance<select class="task-importance"><option value="N/A">N/A</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></label>
+          <label>Depends on<input class="task-dependencies" type="text" placeholder="e.g. Read chapter 4" /></label>
+        </div>
+      </div>
+    </template>
+    <script src="/app.js"></script>
+  </body>
+</html>

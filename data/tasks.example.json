@@ -1,0 +1,9 @@
+{
+  "available_minutes": 45,
+  "tasks": [
+    {"name":"Research outline","due_date":"N/A","effort":"45 min","importance":"High","dependencies":"Read the assignment prompt"},
+    {"name":"Statistics practice quiz","due_date":"N/A","effort":"30 min","importance":"Medium","dependencies":"N/A"},
+    {"name":"Discussion post","due_date":"N/A","effort":"N/A","importance":"Low","dependencies":"N/A"},
+    {"name":"Review lecture notes","due_date":"N/A","effort":"N/A","importance":"N/A","dependencies":"N/A"}
+  ]
+}

@@ -1,0 +1,26 @@
+# Local credentials and environment settings
+.env
+.env.*
+!.env.example
+openai.txt.txt
+
+# Python local environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Node local dependencies and build output
+node_modules/
+dist/
+build/
+
+# Local databases and generated runtime data
+*.sqlite
+*.sqlite3
+data/local/
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/

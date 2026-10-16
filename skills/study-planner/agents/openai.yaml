@@ -1,0 +1,4 @@
+interface:
+  display_name: "Study Planner"
+  short_description: "Turn a student workload into a bounded study-session plan."
+  default_prompt: "Use the study planner procedure to prioritize a student workload and create next steps that fit the available study time."

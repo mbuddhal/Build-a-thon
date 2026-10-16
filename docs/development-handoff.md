@@ -1,0 +1,52 @@
+# Study Sprint Planner Development Handoff
+
+## What is built
+
+The app implements the bounded Option 2 workflow: a student enters available minutes and assignments, receives exactly one recommended top task with a session plan, and sees every other assignment in an ordered queue. Missing due dates and effort estimates are displayed as `N/A`. The final remaining assignment stays last in the queue.
+
+## Run locally
+
+From the repository root in PowerShell:
+
+```powershell
+.\run.ps1
+```
+
+Open `http://127.0.0.1:8000`. The launcher uses `OPENAI_API_KEY` from the process environment, a local `.env`, the parent `.env`, or the ignored `openai.txt.txt` file. If no key is found, the app uses deterministic mock mode so the UI remains demoable.
+
+To force offline mode:
+
+```powershell
+$env:PLANNER_MODE = "mock"
+.\run.ps1
+```
+
+## Architecture
+
+- `app/server.py` is a standard-library Python backend with `/api/health`, `/api/fixture`, and `/api/plan`.
+- `app/static/` contains the browser form, result renderer, and responsive styling.
+- `data/tasks.example.json` is the synthetic demo fixture.
+- `skills/study-planner/` contains the reusable workflow Skill and its UI metadata.
+- `tests/test_planner.py` covers missing-value normalization, time fitting, queue ordering, and empty input validation.
+
+The backend uses the OpenAI Responses API with strict JSON Schema output in live mode. Generated steps are still checked and fitted locally so the displayed total never exceeds the student's available time.
+
+## Three-minute demo
+
+1. Click **Load example**.
+2. Use the default 45 minutes and click **Build my study plan**.
+3. Point out the single recommended task, three time-boxed steps, and the complete later queue.
+4. Point out that unknown dates and effort appear as `N/A` rather than being invented.
+5. Change available time to 20 minutes and run again to show the plan shrinking.
+
+## Verification completed
+
+- Python unit tests pass.
+- Python compilation passes.
+- `git diff --check` passes.
+- The browser workflow was exercised with the example fixture.
+- Live configuration detects the supplied model key without exposing it; a live network call may require local network access that is unavailable in a restricted sandbox.
+
+## Explicit boundaries
+
+The app does not submit assignments, edit calendars, send messages, research the web, or maintain a full-semester schedule. The student remains the final decision-maker.

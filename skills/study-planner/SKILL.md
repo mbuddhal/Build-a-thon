@@ -27,7 +27,9 @@ Represent missing due dates and effort estimates as `N/A`. Do not invent them.
 6. Enforce the total time budget deterministically after model output; never trust generated arithmetic without checking it.
 7. Put assignments that do not fit into an ordered later queue. Keep the last remaining assignment as the last queue entry, and show `N/A` for missing fields.
 8. Explain the allocation logic and list uncertainties or missing information.
-9. Let the student review, edit, reorder, and rerun the schedule.
+9. Report the estimated total workload and how many minutes exceed the current session, when applicable.
+10. Recommend the highest-priority unfinished assignment as the starting point for the next study session, including a task that was only partially completed.
+11. Let the student review, edit, reorder, and rerun the schedule.
 
 ## Output format
 
@@ -38,6 +40,9 @@ Return:
 - `total_minutes`: the checked total, never greater than available minutes.
 - `unused_minutes`: any available time not assigned to an estimate.
 - `queue`: every assignment that did not fit, in display order.
+- `estimated_total_minutes`: the model's estimate for the complete workload, including reasonable estimates for `N/A` effort.
+- `overage_minutes`: estimated workload minutes beyond the current session, never negative.
+- `next_session_task`: the highest-priority unfinished assignment, including partial overflow, or `null` when no work remains.
 - `uncertainties`: missing or ambiguous information, using `N/A` where appropriate.
 
 ## Boundaries

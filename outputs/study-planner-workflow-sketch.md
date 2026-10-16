@@ -23,7 +23,7 @@ flowchart LR
 
 The student enters assignments, deadlines, effort estimates, priorities, dependencies, and available study time. The app validates the information, sends one structured planning request to the AI model, validates the returned schedule, fits the assignment blocks into the available study session, and shows task-specific actions for each scheduled block. The student reviews, edits, reorders, or revises the schedule.
 
-The first version owns one complete unit of work: planning one study session. It does not manage a full calendar, submit assignments, send messages, or continuously reschedule the student's life. It recommends exactly one top task, breaks that task into the current session, and places every other assignment into an ordered queue. Missing due dates and effort estimates display as `N/A`; the final remaining assignment stays last in the queue.
+The first version owns one complete unit of work: planning one study session. It does not manage a full calendar, submit assignments, send messages, or continuously reschedule the student's life. It divides the session across the highest-priority assignments, places anything that does not fit into an ordered queue, reports any estimated workload overage, and recommends the highest-priority unfinished task for the next session, including a partially completed task. Missing due dates and effort estimates display as `N/A`; the final remaining assignment stays last in the queue.
 
 ### AI/API tasks and automation levels
 
@@ -33,7 +33,7 @@ The first version owns one complete unit of work: planning one study session. It
 - **L1:** Validate identifiers, required fields, duration limits, and the final session-time total.
 - **L1:** Fit the returned assignment blocks into the available study session.
 - **L0:** The student reviews, accepts, or revises the plan.
-- **L1:** The controller preserves all non-recommended assignments in the queue and enforces the requested final-item order.
+- **L1:** The controller preserves all non-scheduled assignments in the queue, enforces the session limit, calculates overage, and selects the next-session recommendation.
 
 No Level 3 task is required for the first version. The route and permitted output are predefined, so the model is performing intelligent automation inside a fixed workflow rather than choosing a new workflow path.
 

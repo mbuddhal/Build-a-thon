@@ -66,6 +66,39 @@ class PlannerTests(unittest.TestCase):
                 os.environ["PLANNER_MODE"] = previous_mode
         self.assertEqual(len(plan["queue"]), 1)
         self.assertTrue(plan["queue"][0]["next_steps"])
+        self.assertEqual(plan["next_session_task"]["name"], "Study for midterm")
+
+    def test_overage_is_reported_when_workload_exceeds_session(self):
+        previous_mode = os.environ.get("PLANNER_MODE")
+        os.environ["PLANNER_MODE"] = "mock"
+        try:
+            plan = make_plan({"available_minutes": 30, "tasks": [
+                {"name": "Midterm", "importance": "High", "effort": "45 min"},
+                {"name": "Paper", "importance": "Medium", "effort": "30 min"},
+            ]})
+        finally:
+            if previous_mode is None:
+                os.environ.pop("PLANNER_MODE", None)
+            else:
+                os.environ["PLANNER_MODE"] = previous_mode
+        self.assertEqual(plan["estimated_total_minutes"], 75)
+        self.assertEqual(plan["overage_minutes"], 45)
+
+    def test_next_session_task_is_highest_priority_queued_task(self):
+        previous_mode = os.environ.get("PLANNER_MODE")
+        os.environ["PLANNER_MODE"] = "mock"
+        try:
+            plan = make_plan({"available_minutes": 45, "tasks": [
+                {"name": "Low priority", "importance": "Low", "effort": "30 min"},
+                {"name": "Top assignment", "importance": "High", "effort": "45 min"},
+                {"name": "Next priority", "importance": "Medium", "effort": "30 min"},
+            ]})
+        finally:
+            if previous_mode is None:
+                os.environ.pop("PLANNER_MODE", None)
+            else:
+                os.environ["PLANNER_MODE"] = previous_mode
+        self.assertEqual(plan["next_session_task"]["name"], "Next priority")
 
     def test_empty_tasks_are_rejected(self):
         with self.assertRaises(ValueError):

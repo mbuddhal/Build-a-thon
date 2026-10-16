@@ -231,6 +231,28 @@ def queue_with_previews(tasks: list[dict[str, Any]], scheduled_ids: set[str], pr
     return queue
 
 
+def next_session_task(tasks: list[dict[str, Any]], schedule: list[dict[str, Any]], queue: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Choose the highest-priority task with work left after the current session."""
+    allocated = {
+        block["task"]["id"]: sum(
+            item.get("minutes", 0) for item in schedule if item["task"]["id"] == block["task"]["id"]
+        )
+        for block in schedule
+    }
+    queue_ids = {task["id"] for task in queue}
+    candidates: list[dict[str, Any]] = []
+    for task in tasks:
+        effort = parse_effort_minutes(task["effort"])
+        task_allocated = allocated.get(task["id"], 0)
+        remaining = effort - task_allocated if effort is not None else None
+        if task["id"] in queue_ids or (remaining is not None and remaining > 0):
+            candidate = dict(task)
+            if remaining is not None and remaining > 0:
+                candidate["remaining_minutes"] = remaining
+            candidates.append(candidate)
+    return max(candidates, key=priority_score) if candidates else None
+
+
 def schedule_tasks(tasks: list[dict[str, Any]], available_minutes: int, requested_blocks: list[dict[str, Any]] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     ranked = sorted(tasks, key=lambda task: (-priority_score(task), tasks.index(task)))
     by_id = {task["id"]: task for task in tasks}
@@ -266,8 +288,20 @@ def schedule_tasks(tasks: list[dict[str, Any]], available_minutes: int, requeste
     return scheduled, queue
 
 
+def estimate_total_minutes(tasks: list[dict[str, Any]], model_estimate: Any = None) -> int:
+    """Estimate the complete workload, using model output when valid and a modest fallback for N/A effort."""
+    try:
+        estimate = int(model_estimate)
+    except (TypeError, ValueError):
+        estimate = 0
+    if estimate > 0:
+        return estimate
+    return sum(parse_effort_minutes(task["effort"]) or 20 for task in tasks)
+
+
 def mock_plan(tasks: list[dict[str, Any]], available_minutes: int) -> dict[str, Any]:
     schedule, queue = schedule_tasks(tasks, available_minutes)
+    estimated_total = estimate_total_minutes(tasks)
     return {
         "mode": "mock",
         "provider": "mock",
@@ -275,7 +309,10 @@ def mock_plan(tasks: list[dict[str, Any]], available_minutes: int) -> dict[str, 
         "schedule": schedule,
         "total_minutes": sum(block["minutes"] for block in schedule),
         "unused_minutes": max(0, available_minutes - sum(block["minutes"] for block in schedule)),
+        "estimated_total_minutes": estimated_total,
+        "overage_minutes": max(0, estimated_total - available_minutes),
         "queue": queue,
+        "next_session_task": next_session_task(tasks, schedule, queue),
         "uncertainties": ([f"Due date for {task['name']} is N/A." for task in tasks if task["due_date"] == "N/A"]
                           + [f"Effort for {task['name']} is N/A." for task in tasks if task["effort"] == "N/A"]),
     }
@@ -287,6 +324,7 @@ PLAN_SCHEMA = {
     "properties": {
         "summary": {"type": "string"},
         "ranked_task_ids": {"type": "array", "items": {"type": "string"}},
+        "estimated_total_minutes": {"type": "integer", "minimum": 1},
         "schedule": {"type": "array", "items": {
             "type": "object", "additionalProperties": False,
             "properties": {"task_id": {"type": "string"}, "minutes": {"type": "integer", "minimum": 1}, "steps": {"type": "array", "items": {"type": "string"}}},
@@ -299,11 +337,12 @@ PLAN_SCHEMA = {
         }},
         "uncertainties": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["summary", "ranked_task_ids", "schedule", "queue_previews", "uncertainties"],
+    "required": ["summary", "ranked_task_ids", "estimated_total_minutes", "schedule", "queue_previews", "uncertainties"],
 }
 
 
 CLAUDE_PLAN_SCHEMA = json.loads(json.dumps(PLAN_SCHEMA))
+CLAUDE_PLAN_SCHEMA["properties"]["estimated_total_minutes"].pop("minimum", None)
 CLAUDE_PLAN_SCHEMA["properties"]["schedule"]["items"]["properties"]["minutes"].pop("minimum", None)
 
 
@@ -322,7 +361,8 @@ def planning_prompt() -> str:
     return (
         "You are a bounded study-planning assistant. Return only the supplied schema. "
         "Rank tasks using only supplied evidence. Treat N/A as unknown and never invent dates, effort, grades, "
-        "or dependencies. Build a multi-assignment schedule for the available minutes, ordered by priority. Use "
+        "or dependencies. Estimate the total minutes required for the complete workload, including reasonable "
+        "estimates for tasks whose effort is N/A. Build a multi-assignment schedule for the available minutes, ordered by priority. Use "
         "importance and urgency to order work, and use effort estimates to decide how much time each block needs. "
         "Make each assignment's steps specific to its ambiguity: for an exam or midterm, use study actions such as reviewing chapter notes, doing a practice "
         "test, and making flashcards; for writing, use prompt analysis, outlining, evidence gathering, and drafting; "
@@ -334,12 +374,17 @@ def planning_prompt() -> str:
 def finalize_live_plan(tasks: list[dict[str, Any]], available_minutes: int, result: dict[str, Any], provider: str) -> dict[str, Any]:
     schedule, queue = schedule_tasks(tasks, available_minutes, result.get("schedule", []))
     total_minutes = sum(block["minutes"] for block in schedule)
+    estimated_total = estimate_total_minutes(tasks, result.get("estimated_total_minutes"))
+    queue = queue_with_previews(tasks, {block["task"]["id"] for block in schedule}, result.get("queue_previews", []))
     return {
         "mode": "live", "provider": provider,
         "summary": str(result.get("summary", "")).strip(),
         "schedule": schedule, "total_minutes": total_minutes,
         "unused_minutes": max(0, available_minutes - total_minutes),
-        "queue": queue_with_previews(tasks, {block["task"]["id"] for block in schedule}, result.get("queue_previews", [])),
+        "estimated_total_minutes": estimated_total,
+        "overage_minutes": max(0, estimated_total - available_minutes),
+        "queue": queue,
+        "next_session_task": next_session_task(tasks, schedule, queue),
         "uncertainties": [str(item) for item in result.get("uncertainties", [])],
     }
 

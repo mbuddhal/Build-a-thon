@@ -61,11 +61,9 @@ The model should return structured JSON with fields similar to:
 {
   "summary": "Start the research outline because it is due soon and has a prerequisite reading step.",
   "ranked_task_ids": ["research-outline", "stats-quiz", "discussion-post"],
-  "recommended_task_id": "research-outline",
-  "next_steps": [
-    {"title": "Read the assignment prompt and highlight deliverables", "minutes": 10},
-    {"title": "Create a three-part outline", "minutes": 20},
-    {"title": "Write the opening paragraph", "minutes": 15}
+  "estimated_total_minutes": 75,
+  "schedule": [
+    {"task_id": "research-outline", "minutes": 30, "steps": ["...", "..."]}
   ],
   "queue_previews": [{"task_id": "stats-quiz", "steps": ["...", "..."]}],
   "uncertainties": []
@@ -76,7 +74,7 @@ If the model response is invalid, the backend should show a recoverable error an
 
 ## 4. Do we have an API key?
 
-Yes. The OpenAI API key is available locally for the live build, loaded from an ignored secret file. It is not committed to GitHub, printed in logs, or included in this planning document.
+Yes. An Anthropic API key is available locally for the live build, loaded from an ignored secret file. The app detects Claude first; the OpenAI key and adapter remain available as an optional fallback. No key is committed to GitHub, printed in logs, or included in this planning document.
 
 The student's ChatGPT login should not be assumed to provide developer API access. We need to confirm that the team has access to an API key, billing or course credits, and the correct model identifier before the buildathon.
 
@@ -88,7 +86,7 @@ The initial app only needs local tools:
 
 - A browser dashboard for entering tasks and reviewing the plan
 - A Python or Node backend for the model request and validation
-- The OpenAI Responses API for the AI planning step
+- The Anthropic Messages API for the live AI planning step, with the OpenAI Responses API retained as an optional fallback
 - A local JSON file for demo data and optional accepted plans
 
 The first version does **not** need Gmail, Slack, a calendar, a recipe website, a social-media connection, or a task-management integration. These would add authentication and external side effects without helping the core workflow score.
@@ -143,8 +141,8 @@ These are outside the first workflow boundary and could make the demo unreliable
 1. Enter three assignments: a research outline due soon, a quiz, and a discussion post.
 2. Set available study time to 45 minutes.
 3. Show the AI-ranked workload and priority explanation.
-4. Show the research outline broken into three steps totaling 45 minutes.
-5. Point out that the backend—not the model—enforced the time limit.
+4. Show the schedule split across assignments and point out the task-specific steps.
+5. Point out the estimated workload and any overage, plus the recommended task for the next session.
 6. Edit the available time to 20 minutes and rerun the workflow.
 7. Show that the plan becomes smaller and remains actionable.
 
@@ -156,8 +154,8 @@ The preliminary design is ready to implement when the team can answer yes to all
 - Does the running app call the selected model for a meaningful planning task?
 - Does the app return a structured, readable plan?
 - Does the plan fit within the available time?
-- Can the student understand why the first task was selected?
+- Can the student understand how priority and effort affected the schedule?
 - Can the student revise the inputs and run the workflow again?
 - Can both teammates explain the model, tool, level, and Skill decisions?
 
-The display allocates time across the highest-priority assignments, preserves anything that does not fit in a later queue, uses `N/A` for missing due dates or effort estimates, and keeps the final remaining assignment as the last queue item.
+The display allocates time across the highest-priority assignments, preserves anything that does not fit in a later queue, uses `N/A` for missing due dates or effort estimates, reports the estimated workload overage, and recommends the highest-priority unfinished task for the next session, including a task that was only partially completed today.

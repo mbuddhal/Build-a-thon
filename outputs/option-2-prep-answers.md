@@ -51,7 +51,7 @@ The workflow ends when the app displays a reviewable plan containing:
 
 ## 3. What AI models will we use?
 
-The planned model is **OpenAI's Responses API with the fast text model `gpt-5.4-mini`**, subject to confirmation against the course's Week 6 model workbook.
+The selected live model is **Anthropic's Messages API with `claude-haiku-5-5`**, with the OpenAI adapter retained as an optional fallback. Confirm the exact approved identifier against the course's Week 6 model workbook if the instructor requires a specific model.
 
 The model will handle language interpretation and structured planning. It will not be trusted to perform arithmetic or enforce limits by itself. The local backend will validate the response and calculate the final time total.
 
@@ -67,6 +67,7 @@ The model should return structured JSON with fields similar to:
     {"title": "Create a three-part outline", "minutes": 20},
     {"title": "Write the opening paragraph", "minutes": 15}
   ],
+  "queue_previews": [{"task_id": "stats-quiz", "steps": ["...", "..."]}],
   "uncertainties": []
 }
 ```
@@ -122,7 +123,7 @@ A small reusable study-planning Skill would be useful because the inputs change 
 - The required structured output
 - Boundaries such as no invented deadlines and no automatic submission
 
-The Skill is optional for the first build. If time becomes tight, keep these instructions in the model prompt and explain that a separate Skill was omitted to reduce setup risk.
+The reusable Skill is included in the repository and keeps the workflow boundaries, `N/A` handling, task-specific decomposition, queue behavior, and student-editable session plan consistent.
 
 ## Intentionally excluded features
 

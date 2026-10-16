@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-from server import fit_steps, make_plan, normalize_tasks  # noqa: E402
+from server import fit_steps, make_plan, normalize_tasks, task_specific_steps  # noqa: E402
 
 
 class PlannerTests(unittest.TestCase):
@@ -38,6 +38,30 @@ class PlannerTests(unittest.TestCase):
         self.assertEqual(plan["recommended_task"]["name"], "Top assignment")
         self.assertEqual([task["name"] for task in plan["queue"]], ["First assignment", "Final assignment"])
         self.assertLessEqual(plan["total_minutes"], 30)
+
+    def test_midterm_plan_uses_task_specific_study_moves(self):
+        task = normalize_tasks([{"name": "Study for midterm", "dependencies": "Chapters 1-4"}])[0]
+        steps = task_specific_steps(task)
+        joined = " ".join(steps).lower()
+        self.assertIn("chapter notes", joined)
+        self.assertIn("practice test", joined)
+        self.assertIn("flashcards", joined)
+
+    def test_queue_assignments_include_next_move_previews(self):
+        previous_mode = os.environ.get("PLANNER_MODE")
+        os.environ["PLANNER_MODE"] = "mock"
+        try:
+            plan = make_plan({"available_minutes": 45, "tasks": [
+                {"name": "Study for midterm", "importance": "High"},
+                {"name": "Write discussion post", "importance": "Low"},
+            ]})
+        finally:
+            if previous_mode is None:
+                os.environ.pop("PLANNER_MODE", None)
+            else:
+                os.environ["PLANNER_MODE"] = previous_mode
+        self.assertEqual(len(plan["queue"]), 1)
+        self.assertTrue(plan["queue"][0]["next_steps"])
 
     def test_empty_tasks_are_rejected(self):
         with self.assertRaises(ValueError):

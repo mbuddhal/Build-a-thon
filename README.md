@@ -12,9 +12,9 @@ From PowerShell:
 
 Then open <http://127.0.0.1:8000>.
 
-The launcher checks for `OPENAI_API_KEY` in the process environment, `Build-a-thon\.env`, the parent course-resource folder `.env`, and the ignored local file `openai.txt.txt`. If no key is available, the app runs a clearly labeled deterministic demo mode so the interface and controller can be tested safely.
+The launcher checks for `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` in the process environment, `.env` files, and the ignored local files `claude.txt.txt` and `openai.txt.txt`. Claude is preferred when both providers are available; set `PLANNER_PROVIDER=openai` to choose OpenAI explicitly. If no key is available, the app runs a clearly labeled deterministic demo mode so the interface and controller can be tested safely.
 
-For live mode, use the supplied local secret file or an ignored `.env` file. Never commit `.env`, `openai.txt.txt`, or paste the key into chat. The live adapter calls the OpenAI Responses API with strict structured output; the local controller validates the recommended task, fits steps to the time limit, and constructs the remaining queue.
+For live mode, use the supplied local secret file or an ignored `.env` file. Never commit `.env`, `openai.txt.txt`, `claude.txt.txt`, or paste a key into chat. The live adapters use strict structured output through the OpenAI Responses API or Anthropic Messages API; the local controller validates the recommended task, fits steps to the time limit, and constructs the remaining queue.
 
 ## Test
 
@@ -25,4 +25,4 @@ $python = 'C:\Users\zoeyt\.cache\codex-runtimes\codex-primary-runtime\dependenci
 
 ## Workflow boundary
 
-The app plans one current study session. It recommends exactly one top task, creates a time-bounded session plan, and lists every other assignment in an ordered queue. Missing due dates and effort estimates appear as `N/A`. It does not submit assignments, edit calendars, send messages, or manage the full semester.
+The app plans one current study session. It recommends exactly one top task, creates task-specific next moves, lets the student edit wording, minutes, and order, and lists every other assignment in a grey later queue with an AI preview and the supplied details. Missing due dates and effort estimates appear as `N/A`. It does not submit assignments, edit calendars, send messages, or manage the full semester.

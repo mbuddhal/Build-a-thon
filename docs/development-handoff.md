@@ -2,7 +2,7 @@
 
 ## What is built
 
-The app implements the bounded Option 2 workflow: a student enters available minutes and assignments, receives exactly one recommended top task with a session plan, and sees every other assignment in an ordered queue. Missing due dates and effort estimates are displayed as `N/A`. The final remaining assignment stays last in the queue.
+The app implements the bounded Option 2 workflow: a student enters available minutes and assignments, receives exactly one recommended top task with task-specific session moves, and sees every other assignment in a grey later queue with its details and an AI preview. The session plan can be edited, time-boxed, and reordered with drag-and-drop or arrow controls. Missing due dates and effort estimates are displayed as `N/A`. The final remaining assignment stays last in the queue.
 
 ## Run locally
 
@@ -12,7 +12,7 @@ From the repository root in PowerShell:
 .\run.ps1
 ```
 
-Open `http://127.0.0.1:8000`. The launcher uses `OPENAI_API_KEY` from the process environment, a local `.env`, the parent `.env`, or the ignored `openai.txt.txt` file. If no key is found, the app uses deterministic mock mode so the UI remains demoable.
+Open `http://127.0.0.1:8000`. The launcher uses `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` from the process environment, local `.env` files, or ignored provider key files. Claude is preferred when both are present. If no key is found, the app uses deterministic mock mode so the UI remains demoable.
 
 To force offline mode:
 
@@ -29,15 +29,16 @@ $env:PLANNER_MODE = "mock"
 - `skills/study-planner/` contains the reusable workflow Skill and its UI metadata.
 - `tests/test_planner.py` covers missing-value normalization, time fitting, queue ordering, and empty input validation.
 
-The backend uses the OpenAI Responses API with strict JSON Schema output in live mode. Generated steps are still checked and fitted locally so the displayed total never exceeds the student's available time.
+The backend uses strict JSON Schema output in live mode through either the OpenAI Responses API or Anthropic Messages API. Generated steps are still checked and fitted locally so the displayed total never exceeds the student's available time.
 
 ## Three-minute demo
 
 1. Click **Load example**.
 2. Use the default 45 minutes and click **Build my study plan**.
-3. Point out the single recommended task, three time-boxed steps, and the complete later queue.
-4. Point out that unknown dates and effort appear as `N/A` rather than being invented.
-5. Change available time to 20 minutes and run again to show the plan shrinking.
+3. Point out the single recommended task, task-specific moves such as chapter review, practice testing, and flashcards, and the complete later queue.
+4. Edit a session step, move it with ↑/↓ or drag-and-drop, and save the plan.
+5. Point out that unknown dates and effort appear as `N/A` rather than being invented.
+6. Change available time to 20 minutes and run again to show the plan shrinking.
 
 ## Verification completed
 

@@ -39,7 +39,7 @@ No Level 3 task is required for the first version. The route and permitted outpu
 
 ### Potential models and external tools
 
-- **OpenAI Responses API with a fast text model, provisionally `gpt-5.4-mini`:** performs the L2 interpretation, prioritization, decomposition, and explanation. Confirm the exact approved identifier in the course model workbook before implementation.
+- **Anthropic Messages API with `claude-haiku-5-5`:** performs the L2 interpretation, prioritization, task-specific decomposition, queue previews, and explanation. The OpenAI Responses API adapter remains available as an optional fallback. Confirm the exact approved identifier in the course model workbook before the final showcase.
 - **Python or Node local backend:** keeps the API key private, validates the model response, and enforces L0-L3 workflow limits.
 - **Browser dashboard:** collects the student's input and displays the plan for review.
 - **JSON file:** stores a small set of demo tasks and optional accepted plans locally.

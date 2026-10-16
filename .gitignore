@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 openai.txt.txt
+claude.txt.txt
 
 # Python local environments and caches
 .venv/

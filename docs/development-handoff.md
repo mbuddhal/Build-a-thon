@@ -2,7 +2,7 @@
 
 ## What is built
 
-The app implements the bounded Option 2 workflow: a student enters available minutes and assignments, receives exactly one recommended top task with task-specific session moves, and sees every other assignment in a grey later queue with its details and an AI preview. The session plan can be edited, time-boxed, and reordered with drag-and-drop or arrow controls. Missing due dates and effort estimates are displayed as `N/A`. The final remaining assignment stays last in the queue.
+The app implements the bounded Option 2 workflow: a student enters available minutes and assignments, receives a priority-ordered multi-assignment schedule with task-specific study moves, and sees anything that does not fit in a grey later queue with its details and an AI preview. The schedule can be edited, time-boxed, and reordered with drag-and-drop or arrow controls. Missing due dates and effort estimates are displayed as `N/A`. The final remaining assignment stays last in the queue.
 
 ## Run locally
 
@@ -35,7 +35,7 @@ The backend uses strict JSON Schema output in live mode through either the OpenA
 
 1. Click **Load example**.
 2. Use the default 45 minutes and click **Build my study plan**.
-3. Point out the single recommended task, task-specific moves such as chapter review, practice testing, and flashcards, and the complete later queue.
+3. Point out the time split across assignments, plus task-specific moves such as chapter review, practice testing, and flashcards.
 4. Edit a session step, move it with ↑/↓ or drag-and-drop, and save the plan.
 5. Point out that unknown dates and effort appear as `N/A` rather than being invented.
 6. Change available time to 20 minutes and run again to show the plan shrinking.

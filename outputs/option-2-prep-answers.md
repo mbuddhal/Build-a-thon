@@ -8,11 +8,11 @@ Study Sprint Planner
 
 We are choosing **Option 2: Turn overwhelming study tasks into next steps**.
 
-The app helps a student turn a group of competing assignments into a short, realistic plan for the study time available right now. The first version focuses on one study session instead of trying to manage the student's entire semester.
+The app helps a student turn a group of competing assignments into a short, realistic schedule for the study time available right now. It divides one study session across assignments by priority instead of trying to manage the student's entire semester.
 
 ## System goal
 
-For a student who feels overwhelmed by several assignments, produce a reviewable study-session plan with concrete next steps, measured by whether the plan fits the student's available time and identifies a sensible first action, without submitting work, inventing deadlines, or changing the student's calendar automatically.
+For a student who feels overwhelmed by several assignments, produce a reviewable multi-assignment study schedule with concrete next steps, measured by whether the allocation fits the student's available time and reflects priority and effort, without submitting work, inventing deadlines, or changing the student's calendar automatically.
 
 ## 2. What major tasks should the AI agent perform?
 
@@ -32,19 +32,19 @@ The student supplies:
 1. **Validate the input.** Check that tasks have usable names, available time is positive, and dates or effort estimates are understandable.
 2. **Interpret the workload.** Convert free-text task descriptions into structured task records.
 3. **Prioritize the workload.** Rank tasks using deadline, importance, effort, dependencies, and the available study time.
-4. **Choose a starting task.** Select the highest-value task that can make meaningful progress in the current session.
-5. **Break it into next steps.** Generate two to four concrete actions that can be started immediately.
-6. **Fit the steps into the session.** Use deterministic code to keep the total within the student's available minutes.
-7. **Explain the recommendation.** Show why the first task was selected and what tradeoffs were made.
+4. **Allocate the session.** Divide the available time across assignments in priority order, using effort estimates to size each block.
+5. **Break each block into next steps.** Generate two to four concrete, task-specific actions for every scheduled assignment.
+6. **Fit the schedule.** Use deterministic code to keep the total within the student's available minutes.
+7. **Explain the allocation.** Show how importance, urgency, and effort affected the schedule.
 8. **Let the student review.** The student accepts the plan or edits the input and tries again.
 
 ### Endpoint
 
 The workflow ends when the app displays a reviewable plan containing:
 
-- A recommended first task
-- Two to four concrete next steps
-- Estimated minutes for each step
+- An ordered study schedule across assignments
+- Two to four concrete next steps per scheduled assignment
+- Estimated minutes for each assignment block
 - The total planned time
 - A short priority explanation
 - Any missing or uncertain information
@@ -105,7 +105,7 @@ No external business-tool keys are required for the first version. We only need 
 | Validate required fields and constraints | Verify | 1 | Local code |
 | Interpret free-text task descriptions | Sense | 2 | AI model |
 | Rank competing assignments | Decide | 2 | AI model inside a fixed procedure |
-| Break the top assignment into next steps | Reason | 2 | AI model |
+| Allocate time across assignments and break each block into next steps | Decide/Reason | 2 | AI model |
 | Add minutes and fit steps into the session | Decide | 1 | Local code |
 | Display the plan | Act | 1 | Local app |
 | Accept or revise the plan | Verify | 0 | Student |
@@ -160,4 +160,4 @@ The preliminary design is ready to implement when the team can answer yes to all
 - Can the student revise the inputs and run the workflow again?
 - Can both teammates explain the model, tool, level, and Skill decisions?
 
-The display also preserves every non-recommended assignment in a queue, uses `N/A` for missing due dates or effort estimates, and keeps the final remaining assignment as the last queue item.
+The display allocates time across the highest-priority assignments, preserves anything that does not fit in a later queue, uses `N/A` for missing due dates or effort estimates, and keeps the final remaining assignment as the last queue item.

@@ -151,6 +151,31 @@ def fit_steps(steps: list[dict[str, Any]], available_minutes: int, task_name: st
     return fitted
 
 
+def parse_effort_minutes(value: str) -> int | None:
+    if value == "N/A":
+        return None
+    match = re.search(r"(\d+(?:\.\d+)?)\s*(hour|hr|h|minute|min|m)?", value.lower())
+    if not match:
+        return None
+    amount = float(match.group(1))
+    unit = match.group(2) or "min"
+    if unit in {"hour", "hr", "h"}:
+        amount *= 60
+    return max(1, int(round(amount)))
+
+
+def fit_text_steps(step_titles: list[str], available_minutes: int, task_name: str) -> list[dict[str, Any]]:
+    titles = [str(title).strip() for title in step_titles if str(title).strip()][:4]
+    if not titles:
+        titles = task_specific_steps({"name": task_name, "dependencies": "N/A"})
+    step_count = min(len(titles), 4)
+    base = max(1, available_minutes // step_count)
+    return fit_steps([
+        *({"title": title, "minutes": base} for title in titles[:step_count - 1]),
+        {"title": titles[step_count - 1], "minutes": available_minutes},
+    ], available_minutes, task_name)
+
+
 def task_specific_steps(task: dict[str, Any]) -> list[str]:
     """Return a concrete strategy for the task type instead of repeating generic planning language."""
     text = f"{task['name']} {task['dependencies']}".lower()
@@ -190,7 +215,7 @@ def task_specific_steps(task: dict[str, Any]) -> list[str]:
     ]
 
 
-def queue_with_previews(tasks: list[dict[str, Any]], top_id: str, previews: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+def queue_with_previews(tasks: list[dict[str, Any]], scheduled_ids: set[str], previews: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     preview_map = {
         str(item.get("task_id")): [str(step) for step in item.get("steps", []) if str(step).strip()]
         for item in (previews or [])
@@ -198,7 +223,7 @@ def queue_with_previews(tasks: list[dict[str, Any]], top_id: str, previews: list
     }
     queue = []
     for task in tasks:
-        if task["id"] == top_id:
+        if task["id"] in scheduled_ids:
             continue
         item = dict(task)
         item["next_steps"] = preview_map.get(task["id"]) or task_specific_steps(task)
@@ -206,24 +231,51 @@ def queue_with_previews(tasks: list[dict[str, Any]], top_id: str, previews: list
     return queue
 
 
-def mock_plan(tasks: list[dict[str, Any]], available_minutes: int) -> dict[str, Any]:
+def schedule_tasks(tasks: list[dict[str, Any]], available_minutes: int, requested_blocks: list[dict[str, Any]] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     ranked = sorted(tasks, key=lambda task: (-priority_score(task), tasks.index(task)))
-    top = ranked[0]
-    action_titles = task_specific_steps(top)
-    step_count = min(4, len(action_titles)) if available_minutes >= 20 else 2
-    base = max(1, available_minutes // step_count)
-    steps = fit_steps([
-        *({"title": title, "minutes": base} for title in action_titles[:step_count - 1]),
-        {"title": action_titles[step_count - 1], "minutes": available_minutes},
-    ], available_minutes, top["name"])
+    by_id = {task["id"]: task for task in tasks}
+    blocks = requested_blocks or [{"task_id": task["id"], "minutes": parse_effort_minutes(task["effort"]), "steps": task_specific_steps(task)} for task in ranked]
+    scheduled: list[dict[str, Any]] = []
+    scheduled_ids: set[str] = set()
+    remaining = available_minutes
+    for block in blocks:
+        task_id = str(block.get("task_id", ""))
+        task = by_id.get(task_id)
+        if not task or task_id in scheduled_ids or remaining <= 0:
+            continue
+        requested = block.get("minutes")
+        try:
+            target = int(requested) if requested is not None else (parse_effort_minutes(task["effort"]) or 20)
+        except (TypeError, ValueError):
+            target = parse_effort_minutes(task["effort"]) or 20
+        minutes = min(max(1, target), remaining)
+        titles = block.get("steps") or task_specific_steps(task)
+        scheduled.append({"task": task, "minutes": minutes, "steps": fit_text_steps(titles, minutes, task["name"])})
+        scheduled_ids.add(task_id)
+        remaining -= minutes
+    if requested_blocks:
+        for task in ranked:
+            if task["id"] in scheduled_ids or remaining <= 0:
+                continue
+            target = parse_effort_minutes(task["effort"]) or max(15, remaining // max(1, len(ranked) - len(scheduled_ids)))
+            minutes = min(target, remaining)
+            scheduled.append({"task": task, "minutes": minutes, "steps": fit_text_steps(task_specific_steps(task), minutes, task["name"])})
+            scheduled_ids.add(task["id"])
+            remaining -= minutes
+    queue = queue_with_previews(tasks, scheduled_ids)
+    return scheduled, queue
+
+
+def mock_plan(tasks: list[dict[str, Any]], available_minutes: int) -> dict[str, Any]:
+    schedule, queue = schedule_tasks(tasks, available_minutes)
     return {
         "mode": "mock",
         "provider": "mock",
-        "recommended_task": top,
-        "summary": f"Start with {top['name']} because it has the strongest available priority signals.",
-        "session_steps": steps,
-        "total_minutes": sum(step["minutes"] for step in steps),
-        "queue": queue_with_previews(tasks, top["id"]),
+        "summary": "Use this study block across assignments in priority order; importance and urgency decide the order, while effort helps determine each time allocation.",
+        "schedule": schedule,
+        "total_minutes": sum(block["minutes"] for block in schedule),
+        "unused_minutes": max(0, available_minutes - sum(block["minutes"] for block in schedule)),
+        "queue": queue,
         "uncertainties": ([f"Due date for {task['name']} is N/A." for task in tasks if task["due_date"] == "N/A"]
                           + [f"Effort for {task['name']} is N/A." for task in tasks if task["effort"] == "N/A"]),
     }
@@ -235,11 +287,10 @@ PLAN_SCHEMA = {
     "properties": {
         "summary": {"type": "string"},
         "ranked_task_ids": {"type": "array", "items": {"type": "string"}},
-        "recommended_task_id": {"type": "string"},
-        "next_steps": {"type": "array", "minItems": 1, "maxItems": 4, "items": {
+        "schedule": {"type": "array", "items": {
             "type": "object", "additionalProperties": False,
-            "properties": {"title": {"type": "string"}, "minutes": {"type": "integer", "minimum": 1}},
-            "required": ["title", "minutes"],
+            "properties": {"task_id": {"type": "string"}, "minutes": {"type": "integer", "minimum": 1}, "steps": {"type": "array", "items": {"type": "string"}}},
+            "required": ["task_id", "minutes", "steps"],
         }},
         "queue_previews": {"type": "array", "items": {
             "type": "object", "additionalProperties": False,
@@ -248,14 +299,12 @@ PLAN_SCHEMA = {
         }},
         "uncertainties": {"type": "array", "items": {"type": "string"}},
     },
-    "required": ["summary", "ranked_task_ids", "recommended_task_id", "next_steps", "queue_previews", "uncertainties"],
+    "required": ["summary", "ranked_task_ids", "schedule", "queue_previews", "uncertainties"],
 }
 
 
 CLAUDE_PLAN_SCHEMA = json.loads(json.dumps(PLAN_SCHEMA))
-CLAUDE_PLAN_SCHEMA["properties"]["next_steps"].pop("minItems", None)
-CLAUDE_PLAN_SCHEMA["properties"]["next_steps"].pop("maxItems", None)
-CLAUDE_PLAN_SCHEMA["properties"]["next_steps"]["items"]["properties"]["minutes"].pop("minimum", None)
+CLAUDE_PLAN_SCHEMA["properties"]["schedule"]["items"]["properties"]["minutes"].pop("minimum", None)
 
 
 def extract_output_text(payload: dict[str, Any]) -> str:
@@ -273,26 +322,24 @@ def planning_prompt() -> str:
     return (
         "You are a bounded study-planning assistant. Return only the supplied schema. "
         "Rank tasks using only supplied evidence. Treat N/A as unknown and never invent dates, effort, grades, "
-        "or dependencies. Choose exactly one task. Make the recommended task's next steps specific to the task "
-        "ambiguity: for an exam or midterm, use study actions such as reviewing chapter notes, doing a practice "
+        "or dependencies. Build a multi-assignment schedule for the available minutes, ordered by priority. Use "
+        "importance and urgency to order work, and use effort estimates to decide how much time each block needs. "
+        "Make each assignment's steps specific to its ambiguity: for an exam or midterm, use study actions such as reviewing chapter notes, doing a practice "
         "test, and making flashcards; for writing, use prompt analysis, outlining, evidence gathering, and drafting; "
         "for discussion work, use question analysis, course evidence, drafting, and a response prompt. "
-        "Also provide concrete preview steps for every queued task. Keep steps actionable and fit the session minutes."
+        "Also provide concrete preview steps for every queued task. Keep the schedule total within the session minutes."
     )
 
 
 def finalize_live_plan(tasks: list[dict[str, Any]], available_minutes: int, result: dict[str, Any], provider: str) -> dict[str, Any]:
-    ids = {task["id"] for task in tasks}
-    top_id = result.get("recommended_task_id")
-    if top_id not in ids:
-        raise RuntimeError("The model returned an unknown recommended task.")
-    top = next(task for task in tasks if task["id"] == top_id)
-    steps = fit_steps(result.get("next_steps", []), available_minutes, top["name"])
+    schedule, queue = schedule_tasks(tasks, available_minutes, result.get("schedule", []))
+    total_minutes = sum(block["minutes"] for block in schedule)
     return {
-        "mode": "live", "provider": provider, "recommended_task": top,
+        "mode": "live", "provider": provider,
         "summary": str(result.get("summary", "")).strip(),
-        "session_steps": steps, "total_minutes": sum(step["minutes"] for step in steps),
-        "queue": queue_with_previews(tasks, top_id, result.get("queue_previews", [])),
+        "schedule": schedule, "total_minutes": total_minutes,
+        "unused_minutes": max(0, available_minutes - total_minutes),
+        "queue": queue_with_previews(tasks, {block["task"]["id"] for block in schedule}, result.get("queue_previews", [])),
         "uncertainties": [str(item) for item in result.get("uncertainties", [])],
     }
 

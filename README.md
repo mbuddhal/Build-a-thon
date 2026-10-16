@@ -25,4 +25,4 @@ $python = 'C:\Users\zoeyt\.cache\codex-runtimes\codex-primary-runtime\dependenci
 
 ## Workflow boundary
 
-The app plans one current study session. It recommends exactly one top task, creates task-specific next moves, lets the student edit wording, minutes, and order, and lists every other assignment in a grey later queue with an AI preview and the supplied details. Missing due dates and effort estimates appear as `N/A`. It does not submit assignments, edit calendars, send messages, or manage the full semester.
+The app plans one current study session. It divides time across assignments by priority and effort, creates task-specific next moves, lets the student edit wording, minutes, and order, and lists anything that does not fit in a grey later queue with an AI preview and the supplied details. Missing due dates and effort estimates appear as `N/A`. It does not submit assignments, edit calendars, send messages, or manage the full semester.

@@ -25,19 +25,23 @@ class PlannerTests(unittest.TestCase):
         steps = fit_steps([{"title": "One", "minutes": 20}, {"title": "Two", "minutes": 20}], 25, "Example")
         self.assertEqual(sum(step["minutes"] for step in steps), 25)
 
-    def test_mock_plan_has_top_task_and_queue_order(self):
+    def test_mock_plan_allocates_time_by_priority_and_effort(self):
         previous_mode = os.environ.get("PLANNER_MODE")
         os.environ["PLANNER_MODE"] = "mock"
         try:
-            plan = make_plan({"available_minutes": 30, "tasks": self.raw_tasks})
+            plan = make_plan({"available_minutes": 60, "tasks": [
+                {"name": "First assignment", "importance": "Low", "effort": "15 min"},
+                {"name": "Top assignment", "importance": "High", "effort": "30 min"},
+                {"name": "Final assignment", "importance": "N/A", "effort": "30 min"},
+            ]})
         finally:
             if previous_mode is None:
                 os.environ.pop("PLANNER_MODE", None)
             else:
                 os.environ["PLANNER_MODE"] = previous_mode
-        self.assertEqual(plan["recommended_task"]["name"], "Top assignment")
-        self.assertEqual([task["name"] for task in plan["queue"]], ["First assignment", "Final assignment"])
-        self.assertLessEqual(plan["total_minutes"], 30)
+        self.assertEqual([block["task"]["name"] for block in plan["schedule"]], ["Top assignment", "First assignment", "Final assignment"])
+        self.assertEqual([block["minutes"] for block in plan["schedule"]], [30, 15, 15])
+        self.assertLessEqual(plan["total_minutes"], 60)
 
     def test_midterm_plan_uses_task_specific_study_moves(self):
         task = normalize_tasks([{"name": "Study for midterm", "dependencies": "Chapters 1-4"}])[0]
@@ -51,9 +55,9 @@ class PlannerTests(unittest.TestCase):
         previous_mode = os.environ.get("PLANNER_MODE")
         os.environ["PLANNER_MODE"] = "mock"
         try:
-            plan = make_plan({"available_minutes": 45, "tasks": [
-                {"name": "Study for midterm", "importance": "High"},
-                {"name": "Write discussion post", "importance": "Low"},
+            plan = make_plan({"available_minutes": 20, "tasks": [
+                {"name": "Study for midterm", "importance": "High", "effort": "45 min"},
+                {"name": "Write discussion post", "importance": "Low", "effort": "30 min"},
             ]})
         finally:
             if previous_mode is None:

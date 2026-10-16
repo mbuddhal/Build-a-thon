@@ -7,8 +7,8 @@ flowchart LR
     A[L0 Trigger: student enters tasks and available study time]
     --> B[L1 Validate required fields and constraints]
     --> C[L2 Interpret workload and rank tasks]
-    --> D[L2 Generate concrete next steps for the top task]
-    --> E[L1 Fit steps into the available session]
+    --> D[L2 Allocate time and generate concrete steps for scheduled tasks]
+    --> E[L1 Fit the schedule into the available session]
     --> F[L0 Student reviews the plan]
     --> G[L0 Endpoint: actionable study plan]
 
@@ -21,7 +21,7 @@ flowchart LR
 
 ### Basic sequence
 
-The student enters assignments, deadlines, effort estimates, priorities, dependencies, and available study time. The app validates the information, sends one structured planning request to the AI model, validates the returned plan, fits the recommended steps into the available study session, and shows an actionable plan. The student reviews the plan and can accept it or revise the inputs.
+The student enters assignments, deadlines, effort estimates, priorities, dependencies, and available study time. The app validates the information, sends one structured planning request to the AI model, validates the returned schedule, fits the assignment blocks into the available study session, and shows task-specific actions for each scheduled block. The student reviews, edits, reorders, or revises the schedule.
 
 The first version owns one complete unit of work: planning one study session. It does not manage a full calendar, submit assignments, send messages, or continuously reschedule the student's life. It recommends exactly one top task, breaks that task into the current session, and places every other assignment into an ordered queue. Missing due dates and effort estimates display as `N/A`; the final remaining assignment stays last in the queue.
 
@@ -29,9 +29,9 @@ The first version owns one complete unit of work: planning one study session. It
 
 - **L2:** Interpret the student's free-text task descriptions and return a structured representation.
 - **L2:** Prioritize the submitted tasks using deadline, importance, effort, dependencies, and available time.
-- **L2:** Break the highest-priority task into realistic next steps and estimate each step's duration.
+- **L2:** Allocate time across the highest-priority assignments and break each scheduled assignment into realistic next steps.
 - **L1:** Validate identifiers, required fields, duration limits, and the final session-time total.
-- **L1:** Fit the returned steps into the available study session.
+- **L1:** Fit the returned assignment blocks into the available study session.
 - **L0:** The student reviews, accepts, or revises the plan.
 - **L1:** The controller preserves all non-recommended assignments in the queue and enforces the requested final-item order.
 

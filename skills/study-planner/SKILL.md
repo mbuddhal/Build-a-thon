@@ -1,11 +1,11 @@
 ---
 name: study-planner
-description: "Turn a student's changing workload into a bounded study-session plan with one recommended task, concrete next steps, and an ordered queue of remaining assignments."
+description: "Turn a student's changing workload into a bounded multi-assignment study schedule with priority-based time blocks, concrete next steps, and an ordered queue of assignments that do not fit."
 ---
 
 # Study Planner
 
-Use this skill when a student has several assignments and wants a realistic plan for one available study session. The goal is a reviewable plan, not automatic submission, calendar management, or full-semester scheduling.
+Use this skill when a student has several assignments and wants a realistic schedule for one available study session. The goal is a reviewable multi-assignment schedule, not automatic submission, calendar management, or full-semester scheduling.
 
 ## Inputs
 
@@ -22,22 +22,22 @@ Represent missing due dates and effort estimates as `N/A`. Do not invent them.
 1. Validate that available minutes is a positive number and every assignment has a usable name.
 2. Preserve the student's assignment order and identifiers.
 3. Interpret the task descriptions and rank the workload using the available evidence: deadline, importance, effort, dependencies, and session time.
-4. Select exactly one recommended task when at least one valid task exists.
-5. Break the recommended task into two to four concrete next steps that fit within the current session.
-6. Enforce the time budget deterministically after model output; never trust generated arithmetic without checking it.
-7. Put every other assignment into an ordered queue. Keep the last remaining assignment as the last queue entry, and show `N/A` for missing fields.
-8. Explain the recommendation and list uncertainties or missing information.
-9. Let the student review, edit, and rerun the plan.
+4. Allocate the available minutes across assignments in priority order. Use importance and urgency to order work, and use effort estimates to determine each block's size.
+5. Break each scheduled assignment into two to four concrete, task-specific next steps that fit its allocated block.
+6. Enforce the total time budget deterministically after model output; never trust generated arithmetic without checking it.
+7. Put assignments that do not fit into an ordered later queue. Keep the last remaining assignment as the last queue entry, and show `N/A` for missing fields.
+8. Explain the allocation logic and list uncertainties or missing information.
+9. Let the student review, edit, reorder, and rerun the schedule.
 
 ## Output format
 
 Return:
 
-- `recommended_task`: the one selected task.
-- `summary`: a short reason for selecting it.
-- `session_steps`: two to four actions with positive integer minute estimates.
+- `schedule`: ordered assignment blocks with minutes and two to four concrete next steps per block.
+- `summary`: a short explanation of how time was allocated.
 - `total_minutes`: the checked total, never greater than available minutes.
-- `queue`: every non-recommended assignment in display order.
+- `unused_minutes`: any available time not assigned to an estimate.
+- `queue`: every assignment that did not fit, in display order.
 - `uncertainties`: missing or ambiguous information, using `N/A` where appropriate.
 
 ## Boundaries

@@ -3,7 +3,7 @@ name: study-planner
 description: "Turn a student's changing workload into a bounded multi-assignment study schedule with priority-based time blocks, concrete next steps, and an ordered queue of assignments that do not fit."
 ---
 
-# Study Planner
+# StudyBloom Study Planner
 
 Use this skill when a student has several assignments and wants a realistic schedule for one available study session. The goal is a reviewable multi-assignment schedule, not automatic submission, calendar management, or full-semester scheduling.
 
@@ -29,13 +29,13 @@ Represent missing due dates and effort estimates as `N/A`. Do not invent them.
 8. Explain the allocation logic and list uncertainties or missing information.
 9. Report the estimated total workload and how many minutes exceed the current session, when applicable.
 10. Recommend the highest-priority unfinished assignment as the starting point for the next study session, including a task that was only partially completed.
-11. Let the student review, edit, reorder, and rerun the schedule.
+11. Let the student review, edit, drag-and-drop schedule blocks to reorder them, and rerun the schedule. Do not provide static up/down arrow controls.
 
 ## Output format
 
 Return:
 
-- `schedule`: ordered assignment blocks with minutes and two to four concrete next steps per block.
+- `schedule`: ordered assignment blocks with minutes and two to four concrete next steps per block; the browser lets the student change this order by dragging blocks.
 - `summary`: a short explanation of how time was allocated.
 - `total_minutes`: the checked total, never greater than available minutes.
 - `unused_minutes`: any available time not assigned to an estimate.

@@ -42,7 +42,7 @@ function clonePlan(plan) {
 
 function scheduleBlockMarkup(block, index) {
   const steps = (block.steps || []).map((step, stepIndex) => `<li><span class="step-number">${stepIndex + 1}</span><label class="schedule-step-editor"><span class="sr-only">${escapeHtml(block.task.name)} step ${stepIndex + 1}</span><input class="schedule-step-input" type="text" value="${escapeHtml(step.title)}" /></label></li>`).join('');
-  return `<li class="schedule-block" draggable="true" data-schedule-index="${index}"><div class="schedule-block-header"><span class="drag-handle" aria-hidden="true">⋮⋮</span><span class="step-number">${index + 1}</span><div class="schedule-task-title"><strong>${escapeHtml(block.task.name)}</strong><small>Due: ${escapeHtml(block.task.due_date)} · Effort: ${escapeHtml(block.task.effort)} · Importance: ${escapeHtml(block.task.importance)}</small></div><label class="block-time-editor"><span class="sr-only">Minutes for ${escapeHtml(block.task.name)}</span><input class="block-minutes-input" type="number" min="1" value="${Number(block.minutes) || 1}" /><span>min</span></label><span class="step-move-controls"><button type="button" class="move-block" data-direction="up" aria-label="Move ${escapeHtml(block.task.name)} up" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" class="move-block" data-direction="down" aria-label="Move ${escapeHtml(block.task.name)} down" ${index === (currentPlan.schedule.length - 1) ? 'disabled' : ''}>↓</button></span></div><ol class="schedule-substeps">${steps}</ol></li>`;
+  return `<li class="schedule-block" data-schedule-index="${index}"><div class="schedule-block-header"><span class="drag-handle" aria-label="Drag to reorder" role="button" tabindex="0">⋮⋮</span><span class="step-number">${index + 1}</span><div class="schedule-task-title"><strong>${escapeHtml(block.task.name)}</strong><small>Due: ${escapeHtml(block.task.due_date)} · Effort: ${escapeHtml(block.task.effort)} · Importance: ${escapeHtml(block.task.importance)}</small></div><label class="block-time-editor"><span class="sr-only">Minutes for ${escapeHtml(block.task.name)}</span><input class="block-minutes-input" type="number" min="1" value="${Number(block.minutes) || 1}" /><span>min</span></label></div><ol class="schedule-substeps">${steps}</ol></li>`;
 }
 
 function queueMarkup(task, index) {
@@ -78,40 +78,57 @@ function saveScheduleEdits() {
   renderPlan(currentPlan, false);
 }
 
-function reorderSchedule(index, direction) {
-  currentPlan.schedule = readScheduleEdits();
-  const nextIndex = direction === 'up' ? index - 1 : index + 1;
-  if (nextIndex < 0 || nextIndex >= currentPlan.schedule.length) return;
-  [currentPlan.schedule[index], currentPlan.schedule[nextIndex]] = [currentPlan.schedule[nextIndex], currentPlan.schedule[index]];
-  renderPlan(currentPlan, false);
-}
-
 function wireScheduleEditor() {
   const list = document.querySelector('#study-schedule');
   if (!list) return;
-  list.addEventListener('click', (event) => {
-    const button = event.target.closest('.move-block');
-    if (button) reorderSchedule(Number(button.closest('.schedule-block').dataset.scheduleIndex), button.dataset.direction);
-  });
-  list.addEventListener('dragstart', (event) => {
+  let draggedNode = null;
+  let draggedPointerId = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let didPointerMove = false;
+
+  const finishPointerDrag = (event) => {
+    if (!draggedNode || (event && event.pointerId !== draggedPointerId)) return;
+    const node = draggedNode;
+    node.classList.remove('dragging');
+    if (node.hasPointerCapture?.(draggedPointerId)) node.releasePointerCapture(draggedPointerId);
+    draggedNode = null;
+    draggedPointerId = null;
+    if (didPointerMove) {
+      currentPlan.schedule = readScheduleEdits();
+      renderPlan(currentPlan, false);
+    }
+    didPointerMove = false;
+  };
+
+  list.addEventListener('pointerdown', (event) => {
     const node = event.target.closest('.schedule-block');
+    if (event.target.closest('input, textarea, select, button, a')) return;
     if (!node) return;
-    currentPlan.schedule = readScheduleEdits();
-    list.dataset.dragIndex = node.dataset.scheduleIndex;
-    node.classList.add('dragging');
-  });
-  list.addEventListener('dragend', (event) => event.target.closest('.schedule-block')?.classList.remove('dragging'));
-  list.addEventListener('dragover', (event) => event.preventDefault());
-  list.addEventListener('drop', (event) => {
     event.preventDefault();
-    const target = event.target.closest('.schedule-block');
-    const from = Number(list.dataset.dragIndex);
-    const to = Number(target?.dataset.scheduleIndex);
-    if (!Number.isInteger(from) || !Number.isInteger(to) || from === to) return;
-    const [moved] = currentPlan.schedule.splice(from, 1);
-    currentPlan.schedule.splice(to, 0, moved);
-    renderPlan(currentPlan, false);
+    currentPlan.schedule = readScheduleEdits();
+    draggedNode = node;
+    draggedPointerId = event.pointerId;
+    dragStartX = event.clientX;
+    dragStartY = event.clientY;
+    didPointerMove = false;
+    node.classList.add('dragging');
+    node.setPointerCapture?.(event.pointerId);
   });
+
+  list.addEventListener('pointermove', (event) => {
+    if (!draggedNode || event.pointerId !== draggedPointerId) return;
+    event.preventDefault();
+    if (Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) < 4) return;
+    didPointerMove = true;
+    const otherNodes = [...list.querySelectorAll('.schedule-block')].filter((node) => node !== draggedNode);
+    const target = otherNodes.find((node) => event.clientY < node.getBoundingClientRect().top + node.getBoundingClientRect().height / 2);
+    if (target) list.insertBefore(draggedNode, target);
+    else if (otherNodes.length) list.appendChild(draggedNode);
+  });
+
+  list.addEventListener('pointerup', finishPointerDrag);
+  list.addEventListener('pointercancel', finishPointerDrag);
 }
 
 function renderPlan(plan, resetBaseline = true) {
@@ -130,7 +147,7 @@ function renderPlan(plan, resetBaseline = true) {
     ? `<div class="next-session-callout"><p class="eyebrow">Next study session</p><strong>Start with ${escapeHtml(currentPlan.next_session_task.name)}</strong><p>It is the highest-priority task with work left after today.</p></div>`
     : `<div class="next-session-callout next-session-clear"><p class="eyebrow">Next study session</p><strong>Nothing is waiting.</strong><p>Every assignment fit into this session.</p></div>`;
   resultPanel.className = 'card result-card result-ready';
-  resultPanel.innerHTML = `<div class="result-header"><div><p class="eyebrow">${source}</p><h2>Your study schedule</h2></div><span class="time-pill">${currentPlan.total_minutes} / ${availableMinutes} min</span></div><p class="summary">${escapeHtml(currentPlan.summary)}</p>${workloadNote}<div class="result-section session-section"><div class="result-section-title"><span class="section-dot accent"></span><h3>Session schedule</h3><span class="edit-hint">${unused || 'All available time allocated'} · drag blocks or use ↑ ↓</span></div><p class="section-help">Time is divided across assignments by priority. Edit minutes or reorder the blocks to match your preferences.</p><ol id="study-schedule" class="schedule-list">${schedule}</ol><div class="session-actions"><button id="save-plan" class="button button-primary" type="button">Save edits</button><button id="reset-plan" class="button button-secondary" type="button">Reset AI schedule</button><span id="edit-status" class="edit-status" role="status"></span></div></div><div class="result-section queue-section"><div class="result-section-title"><span class="section-dot queue"></span><h3>Later queue</h3><span class="queue-caption">${currentPlan.queue.length} assignment${currentPlan.queue.length === 1 ? '' : 's'} waiting</span></div><p class="section-help">Assignments that did not fit this session, with their supplied details and a preview of what to do next.</p><ol class="queue-list">${queue}</ol></div>${nextSession}${uncertainties}<button id="edit-inputs" class="button button-secondary" type="button">Edit workload inputs</button>`;
+  resultPanel.innerHTML = `<div class="result-header"><div><p class="eyebrow">${source}</p><h2>Your study schedule</h2></div><span class="time-pill">${currentPlan.total_minutes} / ${availableMinutes} min</span></div><p class="summary">${escapeHtml(currentPlan.summary)}</p>${workloadNote}<div class="result-section session-section"><div class="result-section-title"><span class="section-dot accent"></span><h3>Session schedule</h3><span class="edit-hint">${unused || 'All available time allocated'} · drag blocks to reorder</span></div><p class="section-help">Time is divided across assignments by priority. Drag a block to change the order, or edit its minutes and next steps.</p><ol id="study-schedule" class="schedule-list">${schedule}</ol><div class="session-actions"><button id="save-plan" class="button button-primary" type="button">Save edits</button><button id="reset-plan" class="button button-secondary" type="button">Reset AI schedule</button><span id="edit-status" class="edit-status" role="status"></span></div></div><div class="result-section queue-section"><div class="result-section-title"><span class="section-dot queue"></span><h3>Later queue</h3><span class="queue-caption">${currentPlan.queue.length} assignment${currentPlan.queue.length === 1 ? '' : 's'} waiting</span></div><p class="section-help">Assignments that did not fit this session, with their supplied details and a preview of what to do next.</p><ol class="queue-list">${queue}</ol></div>${nextSession}${uncertainties}<button id="edit-inputs" class="button button-secondary" type="button">Edit workload inputs</button>`;
   document.querySelector('#save-plan').addEventListener('click', saveScheduleEdits);
   document.querySelector('#reset-plan').addEventListener('click', () => renderPlan(baselinePlan));
   document.querySelector('#edit-inputs').addEventListener('click', () => document.querySelector('#available-minutes').focus());

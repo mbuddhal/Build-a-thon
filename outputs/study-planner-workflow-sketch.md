@@ -1,4 +1,4 @@
-# Study Planner Workflow
+# StudyBloom Workflow
 
 This is the intentionally bounded Option 2 workflow for the Mini AI Build-a-thon. It turns a student's current workload into a short, reviewable study plan for one available study session.
 
@@ -9,7 +9,7 @@ flowchart LR
     --> C[L2 Interpret workload and rank tasks]
     --> D[L2 Allocate time and generate concrete steps for scheduled tasks]
     --> E[L1 Fit the schedule into the available session]
-    --> F[L0 Student reviews the plan]
+    --> F[L0 Student reviews, edits, or drag-reorders the plan]
     --> G[L0 Endpoint: actionable study plan]
 
     F -->|Edit or clarify| A
@@ -21,7 +21,7 @@ flowchart LR
 
 ### Basic sequence
 
-The student enters assignments, deadlines, effort estimates, priorities, dependencies, and available study time. The app validates the information, sends one structured planning request to the AI model, validates the returned schedule, fits the assignment blocks into the available study session, and shows task-specific actions for each scheduled block. The student reviews, edits, reorders, or revises the schedule.
+The student enters assignments, deadlines, effort estimates, priorities, dependencies, and available study time. StudyBloom validates the information, sends one structured planning request to the AI model, validates the returned schedule, fits the assignment blocks into the available study session, and shows task-specific actions for each scheduled block. The student reviews, edits, drag-and-drops blocks to reorder them, or revises the schedule.
 
 The first version owns one complete unit of work: planning one study session. It does not manage a full calendar, submit assignments, send messages, or continuously reschedule the student's life. It divides the session across the highest-priority assignments, places anything that does not fit into an ordered queue, reports any estimated workload overage, and recommends the highest-priority unfinished task for the next session, including a partially completed task. Missing due dates and effort estimates display as `N/A`; the final remaining assignment stays last in the queue.
 

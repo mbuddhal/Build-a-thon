@@ -1,4 +1,4 @@
-# Study Sprint Planner
+# StudyBloom · Study Sprint Planner
 
 Local BUS4498 Mini AI Build-a-thon app for Option 2: turn an overwhelming study workload into concrete next steps.
 
@@ -25,4 +25,4 @@ $python = 'C:\Users\zoeyt\.cache\codex-runtimes\codex-primary-runtime\dependenci
 
 ## Workflow boundary
 
-The app plans one current study session. It divides time across assignments by priority and effort, creates task-specific next moves, lets the student edit wording, minutes, and order, and lists anything that does not fit in a grey later queue with an AI preview and the supplied details. Missing due dates and effort estimates appear as `N/A`; effort is optional and estimated for total-workload reporting. If work overflows, the app recommends the highest-priority unfinished task for the next session. It does not submit assignments, edit calendars, send messages, or manage the full semester.
+The app plans one current study session. It divides time across assignments by priority and effort, creates task-specific next moves, lets the student edit wording and minutes, and lets the student drag schedule blocks to change their order. Anything that does not fit appears in a grey later queue with an AI preview and the supplied details. Missing due dates and effort estimates appear as `N/A`; effort is optional and estimated for total-workload reporting. If work overflows, the app recommends the highest-priority unfinished task for the next session. It does not submit assignments, edit calendars, send messages, or manage the full semester.

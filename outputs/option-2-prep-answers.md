@@ -2,7 +2,7 @@
 
 ## Working title
 
-Study Sprint Planner
+StudyBloom · Study Sprint Planner
 
 ## 1. Which problem are we choosing?
 

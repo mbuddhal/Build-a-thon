@@ -112,16 +112,9 @@ There is no required Level 3 task in this first version. The app uses a fixed ro
 
 ## Skill decision
 
-A small reusable study-planning Skill would be useful because the inputs change each time while the planning method stays stable. If we include one, it should define:
+A separate runtime Skill is unnecessary for this version. The local controller already owns the fixed workflow, validation, time fitting, queue behavior, and safety boundaries, while the model handles only the bounded L2 planning tasks. Keeping those rules in the backend avoids duplicating logic in a second instruction file.
 
-- Required task fields
-- The priority rules
-- How to handle missing or uncertain deadlines
-- How to decompose a task into concrete actions
-- The required structured output
-- Boundaries such as no invented deadlines and no automatic submission
-
-The reusable Skill is included in the repository and keeps the workflow boundaries, `N/A` handling, task-specific decomposition, queue behavior, and student-editable session plan consistent.
+The team can still explain that a reusable Skill could be useful later if the same study-planning procedure needs to be reused across multiple apps or tools.
 
 ## Intentionally excluded features
 
@@ -156,6 +149,6 @@ The preliminary design is ready to implement when the team can answer yes to all
 - Does the plan fit within the available time?
 - Can the student understand how priority and effort affected the schedule?
 - Can the student revise the inputs and run the workflow again?
-- Can both teammates explain the model, tool, level, and Skill decisions?
+- Can both teammates explain the model, tool, level, and why a separate runtime Skill is unnecessary?
 
 The display allocates time across the highest-priority assignments, preserves anything that does not fit in a later queue, uses `N/A` for missing due dates or effort estimates, reports the estimated workload overage, and recommends the highest-priority unfinished task for the next session, including a task that was only partially completed today.

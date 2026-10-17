@@ -26,7 +26,6 @@ $env:PLANNER_MODE = "mock"
 - `app/server.py` is a standard-library Python backend with `/api/health`, `/api/fixture`, and `/api/plan`.
 - `app/static/` contains the browser form, result renderer, and responsive styling.
 - `data/tasks.example.json` is the synthetic demo fixture.
-- `skills/study-planner/` contains the reusable workflow Skill and its UI metadata.
 - `tests/test_planner.py` covers missing-value normalization, time fitting, queue previews, overage reporting, partial overflow, and empty input validation.
 
 The backend uses strict JSON Schema output in live mode through either the OpenAI Responses API or Anthropic Messages API. Generated steps are still checked and fitted locally so the displayed total never exceeds the student's available time.
